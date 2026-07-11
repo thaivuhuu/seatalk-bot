@@ -6,6 +6,7 @@ const callback = require("./routes/callback");
 const app = express();
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use("/", api);
 app.use("/", callback);
