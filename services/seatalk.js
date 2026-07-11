@@ -17,14 +17,11 @@ async function getAccessToken(){
 async function sendGroupMessage(
     groupId,
     text,
-    quotedMessageId = null
+    threadMessageId = null
 ){
 
     if(!accessToken){
-
-        accessToken =
-            await getAccessToken();
-
+        accessToken = await getAccessToken();
     }
 
 
@@ -47,49 +44,47 @@ async function sendGroupMessage(
     };
 
 
+    // Reply vào thread
+    if(threadMessageId){
 
-    /**
-     * Reply trong thread
-     */
-    if(quotedMessageId){
+        payload.thread = {
 
-        payload.message.quoted_message_id =
-            quotedMessageId;
+            root_message_id: threadMessageId
+
+        };
 
     }
 
 
 
     console.log(
-        "SEND MESSAGE:",
+        "SEATALK PAYLOAD:",
         JSON.stringify(payload,null,2)
     );
 
 
 
-    const response =
-        await axios.post(
+    const response = await axios.post(
 
-            "https://openapi.seatalk.io/messaging/v2/group_chat",
+        "https://openapi.seatalk.io/messaging/v2/group_chat",
 
-            payload,
+        payload,
 
-            {
+        {
 
-                headers: {
+            headers: {
 
-                    Authorization:
-                    `Bearer ${accessToken}`,
+                Authorization:
+                `Bearer ${accessToken}`,
 
-                    "Content-Type":
-                    "application/json"
-
-                }
+                "Content-Type":
+                "application/json"
 
             }
 
-        );
+        }
 
+    );
 
 
     return response.data;
