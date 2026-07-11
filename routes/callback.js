@@ -1,110 +1,152 @@
 const express = require("express");
+const router = express.Router();
 
 const { sendGroupMessage } = require("../services/seatalk");
-const { findVehicle } = require("../services/sheets");
+const { findVehicle } = require("../services/vehicle");
 
-const router = express.Router();
 
 router.post("/callback", async (req, res) => {
 
-    console.log("======================================");
-    console.log("SeaTalk Callback");
-    console.log(JSON.stringify(req.body, null, 2));
-    console.log("======================================");
-
     try {
 
-        // Verify Callback
-        const challenge = req.body?.event?.seatalk_challenge;
+        console.log("========== SEATALK CALLBACK ==========");
+        console.log(JSON.stringify(req.body, null, 2));
 
-        if (challenge) {
 
-            console.log("Verify Success");
+        // SeaTalk challenge verify
+        if (req.body.event?.seatalk_challenge) {
 
             return res.json({
-                seatalk_challenge: challenge
+                seatalk_challenge: req.body.event.seatalk_challenge
             });
 
         }
 
-        // Khi Bot được @ trong Group
-        if (
-            req.body.event_type ===
-            "new_mentioned_message_received_from_group_chat"
-        ) {
 
-            const groupId = req.body.event.group_id;
+        const eventType = req.body.event_type;
 
-            const text =
-                req.body.event.message.text.plain_text;
 
-            console.log("========== VERSION 2 ==========");
-            console.log("Message :", text);
+        /**
+         * User mention bot trong group
+         */
+        if (eventType === "new_mentioned_message_received_from_group_chat") {
 
-            // Bỏ phần @Bot
-            const plate = text
-                .replace("@Transportation SW", "")
-                .trim()
+
+            const event = req.body.event;
+
+
+            const groupId =
+                event.group.group_id;
+
+
+            const messageId =
+                event.message.message_id;
+
+
+            let text =
+                event.message.text.plain_text || "";
+
+
+            console.log("GROUP:", groupId);
+            console.log("MESSAGE ID:", messageId);
+            console.log("TEXT:", text);
+
+
+
+            // Remove bot mention
+            text = text
+                .replace(/@Transportation SW/gi, "")
+                .trim();
+
+
+
+            // Lấy biển số
+            const plate =
+                text
+                .replace(/\s+/g, "")
                 .toUpperCase();
 
-            console.log("Plate :", plate);
 
-            const vehicle = await findVehicle(plate);
 
-            if (!vehicle) {
+            let reply;
 
-                await sendGroupMessage(
-                    groupId,
-                    `❌ Không tìm thấy xe ${plate}`
-                );
 
-                return res.json({
-                    success: true
-                });
+            if (!plate) {
+
+                reply =
+`⚠️ Vui lòng nhập biển số xe
+
+Ví dụ:
+@Transportation SW 50H11201`;
+
+            }
+            else {
+
+
+                const vehicle =
+                    await findVehicle(plate);
+
+
+
+                if (vehicle) {
+
+
+                    reply =
+`🚚 THÔNG TIN XE
+
+Biển số: ${vehicle.plate}
+Tài xế: ${vehicle.driver || "-"}
+Nhóm: ${vehicle.group || "-"}
+Trạng thái: ${vehicle.status || "-"}
+Tốc độ: ${vehicle.speed || 0} km/h
+Địa chỉ:
+${vehicle.address || "-"}`;
+
+
+                }
+                else {
+
+
+                    reply =
+`❌ Không tìm thấy xe:
+
+${plate}`;
+
+                }
 
             }
 
-            const reply =
-`🚚 ${vehicle.plate}
 
-👤 ${vehicle.driver}
 
-🚦 Trạng thái : ${vehicle.status}
-🔌 Động cơ : ${vehicle.engine}
-🛰 GPS : ${vehicle.gps}
-
-⏱ Dừng : ${vehicle.stopTime}
-
-⛽ Nhiên liệu : ${vehicle.fuel}%
-
-📍 ${vehicle.address}
-
-🕒 Cập nhật : ${vehicle.updateTime}`;
-
+            /**
+             * Reply vào thread
+             */
             await sendGroupMessage(
                 groupId,
-                reply
+                reply,
+                messageId
             );
 
-            console.log("Reply sent.");
 
         }
 
-        res.json({
-            success: true
-        });
 
-    } catch (err) {
+        res.sendStatus(200);
 
-        console.error(err);
 
-        res.status(500).json({
-            success: false,
-            error: err.message
-        });
+    }
+    catch(error){
+
+        console.error(
+            "Callback error:",
+            error
+        );
+
+        res.sendStatus(500);
 
     }
 
 });
+
 
 module.exports = router;
