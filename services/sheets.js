@@ -54,3 +54,20 @@ async function getVehicles() {
 module.exports = {
     getVehicles
 };
+
+
+async function findVehicle(plate) {
+
+    const rows = await getRows();
+
+    return rows.find(r =>
+        r.plate.replace(/\s/g, "").toUpperCase() ===
+        plate.replace(/\s/g, "").toUpperCase()
+    );
+
+}
+
+module.exports = {
+    getRows,
+    findVehicle
+};
