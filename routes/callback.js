@@ -38,6 +38,7 @@ router.post("/callback", async (req, res) => {
             const text =
                 req.body.event.message.text.plain_text;
 
+            console.log("========== VERSION 2 ==========");
             console.log("Message :", text);
 
             // Bỏ phần @Bot
