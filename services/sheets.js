@@ -2,7 +2,7 @@ const { google, auth } = require("../config/google");
 
 const spreadsheetId = process.env.SPREADSHEET_ID;
 
-async function getRows() {
+async function getVehicles() {
 
     const client = await auth.getClient();
 
@@ -12,19 +12,32 @@ async function getRows() {
     });
 
     const result = await sheets.spreadsheets.values.get({
-
         spreadsheetId,
-
         range: "Adsun"
-
     });
 
-    return result.data.values || [];
+    const rows = result.data.values || [];
+
+    if (rows.length === 0) return [];
+
+    const headers = rows[0];
+
+    return rows.slice(1).map(row => {
+
+        const obj = {};
+
+        headers.forEach((header, index) => {
+
+            obj[header] = row[index] || "";
+
+        });
+
+        return obj;
+
+    });
 
 }
 
 module.exports = {
-
-    getRows
-
+    getVehicles
 };
