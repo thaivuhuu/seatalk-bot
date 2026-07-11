@@ -1,106 +1,55 @@
 const axios = require("axios");
 
+let token = "";
+let expireTime = 0;
 
-let accessToken = null;
+async function getAccessToken() {
 
-
-
-async function getAccessToken(){
-
-    // giữ nguyên code lấy token của bạn
-    // phần này không cần đổi
-
-}
-
-
-
-async function sendGroupMessage(
-    groupId,
-    text,
-    quotedMessageId = null
-){
-
-    if(!accessToken){
-
-        accessToken =
-            await getAccessToken();
-
+    if (token && Date.now() < expireTime) {
+        return token;
     }
 
-
-    const payload = {
-
-        group_id: groupId,
-
-        message: {
-
-            tag: "text",
-
-            text: {
-
-                content: text
-
-            }
-
+    const res = await axios.post(
+        "https://openapi.seatalk.io/auth/app_access_token",
+        {
+            app_id: process.env.SEATALK_APP_ID,
+            app_secret: process.env.SEATALK_APP_SECRET
         }
-
-    };
-
-
-
-    /**
-     * Reply trong thread
-     */
-    if(quotedMessageId){
-
-        payload.message.quoted_message_id =
-            quotedMessageId;
-
-    }
-
-
-
-    console.log(
-        "SEND MESSAGE:",
-        JSON.stringify(payload,null,2)
     );
 
+    token = res.data.app_access_token;
+    expireTime = Date.now() + (res.data.expire * 1000) - 60000;
 
-
-    const response =
-        await axios.post(
-
-            "https://openapi.seatalk.io/messaging/v2/group_chat",
-
-            payload,
-
-            {
-
-                headers: {
-
-                    Authorization:
-                    `Bearer ${accessToken}`,
-
-                    "Content-Type":
-                    "application/json"
-
-                }
-
-            }
-
-        );
-
-
-
-    return response.data;
-
+    return token;
 }
 
+async function sendGroupMessage(groupId, text) {
 
+    const token = await getAccessToken();
+
+    const res = await axios.post(
+        "https://openapi.seatalk.io/messaging/v2/group_chat",
+        {
+            group_id: groupId,
+            message: {
+                tag: "text",
+                text: {
+                    format: 2,
+                    content: text
+                }
+            }
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+
+    return res.data;
+}
 
 module.exports = {
-
-    sendGroupMessage,
-    getAccessToken
-
+    getAccessToken,
+    sendGroupMessage
 };
