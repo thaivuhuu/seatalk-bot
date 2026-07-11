@@ -1,13 +1,15 @@
 const express = require("express");
 
+const api = require("./routes/api");
+
 const app = express();
 
-app.get("/", (req, res) => {
-  res.send("Seatalk Bot is running.");
-});
+app.use(express.json());
+
+app.use("/", api);
 
 const PORT = process.env.PORT || 10000;
 
 app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+    console.log(`Server running on ${PORT}`);
 });
