@@ -4,22 +4,20 @@ const router = express.Router();
 
 router.post("/callback", (req, res) => {
 
-    console.log("SeaTalk Callback:");
+    console.log("================================");
     console.log(JSON.stringify(req.body, null, 2));
+    console.log("================================");
 
-    const challenge =
-        req.body?.event?.seatalk_challenge ||
-        req.body?.seatalk_challenge;
+    // Verify
+    const challenge = req.body?.event?.seatalk_challenge;
 
     if (challenge) {
-
         return res.json({
             seatalk_challenge: challenge
         });
-
     }
 
-    return res.json({
+    res.json({
         success: true
     });
 
