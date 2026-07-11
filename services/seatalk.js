@@ -18,14 +18,38 @@ async function getAccessToken() {
     );
 
     token = res.data.app_access_token;
-
-    // hết hạn sau gần 2 giờ, trừ 60 giây dự phòng
     expireTime = Date.now() + (res.data.expire * 1000) - 60000;
 
     return token;
+}
 
+async function sendGroupMessage(groupId, text) {
+
+    const token = await getAccessToken();
+
+    const res = await axios.post(
+        "https://openapi.seatalk.io/messaging/v2/group_chat",
+        {
+            group_id: groupId,
+            message: {
+                tag: "text",
+                text: {
+                    format: 2,
+                    content: text
+                }
+            }
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    );
+
+    return res.data;
 }
 
 module.exports = {
-    getAccessToken
+    getAccessToken,
+    sendGroupMessage
 };
