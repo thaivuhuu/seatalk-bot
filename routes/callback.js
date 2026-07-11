@@ -1,25 +1,25 @@
 const express = require("express");
+
 const { sendGroupMessage } = require("../services/seatalk");
+const { findVehicle } = require("../services/sheets");
 
 const router = express.Router();
 
 router.post("/callback", async (req, res) => {
 
-    console.log("========================================");
+    console.log("======================================");
     console.log("SeaTalk Callback");
     console.log(JSON.stringify(req.body, null, 2));
-    console.log("========================================");
+    console.log("======================================");
 
     try {
 
-        // ==================================================
-        // 1. Verify Callback
-        // ==================================================
+        // Verify Callback
         const challenge = req.body?.event?.seatalk_challenge;
 
         if (challenge) {
 
-            console.log("Verify Success:", challenge);
+            console.log("Verify Success");
 
             return res.json({
                 seatalk_challenge: challenge
@@ -27,9 +27,7 @@ router.post("/callback", async (req, res) => {
 
         }
 
-        // ==================================================
-        // 2. Khi Bot được @ trong Group
-        // ==================================================
+        // Khi Bot được @ trong Group
         if (
             req.body.event_type ===
             "new_mentioned_message_received_from_group_chat"
@@ -37,38 +35,69 @@ router.post("/callback", async (req, res) => {
 
             const groupId = req.body.event.group_id;
 
-            const senderId =
-                req.body.event.message.sender.seatalk_id;
-
             const text =
                 req.body.event.message.text.plain_text;
 
-            console.log("========================================");
-            console.log("Group ID :", groupId);
-            console.log("Sender   :", senderId);
-            console.log("Message  :", text);
-            console.log("========================================");
+            console.log("Message :", text);
 
-            // Gửi tin nhắn trả lời
+            // Bỏ phần @Bot
+            const plate = text
+                .replace("@Transportation SW", "")
+                .trim()
+                .toUpperCase();
+
+            console.log("Plate :", plate);
+
+            const vehicle = await findVehicle(plate);
+
+            if (!vehicle) {
+
+                await sendGroupMessage(
+                    groupId,
+                    `❌ Không tìm thấy xe ${plate}`
+                );
+
+                return res.json({
+                    success: true
+                });
+
+            }
+
+            const reply =
+`🚚 ${vehicle.plate}
+
+👤 ${vehicle.driver}
+
+🚦 Trạng thái : ${vehicle.status}
+🔌 Động cơ : ${vehicle.engine}
+🛰 GPS : ${vehicle.gps}
+
+⏱ Dừng : ${vehicle.stopTime}
+
+⛽ Nhiên liệu : ${vehicle.fuel}%
+
+📍 ${vehicle.address}
+
+🕒 Cập nhật : ${vehicle.updateTime}`;
+
             await sendGroupMessage(
                 groupId,
-                "Xin chào! Tôi đã nhận được tin nhắn của bạn."
+                reply
             );
 
             console.log("Reply sent.");
 
         }
 
-        return res.json({
+        res.json({
             success: true
         });
 
     } catch (err) {
 
-        console.error("Callback Error:");
-        console.error(err.response?.data || err.message);
+        console.error(err);
 
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: err.message
         });
