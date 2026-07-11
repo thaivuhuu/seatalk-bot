@@ -1,6 +1,6 @@
 const express = require("express");
 
-const { getRows } = require("../services/sheets");
+const { getVehicles } = require("../services/sheets");
 
 const router = express.Router();
 
@@ -14,9 +14,9 @@ router.get("/vehicles", async (req, res) => {
 
     try {
 
-        const rows = await getRows();
+        const vehicles = await getVehicles();
 
-        res.json(rows);
+        res.json(vehicles);
 
     } catch (err) {
 
