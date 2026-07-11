@@ -18,23 +18,36 @@ async function getVehicles() {
 
     const rows = result.data.values || [];
 
-    if (rows.length === 0) return [];
+    if (rows.length <= 1) return [];
 
-    const headers = rows[0];
+    return rows.slice(1).map(r => ({
 
-    return rows.slice(1).map(row => {
+        plate: r[0] || "",
+        driver: r[1] || "",
 
-        const obj = {};
+        lat: Number(r[2]) || 0,
+        lng: Number(r[3]) || 0,
 
-        headers.forEach((header, index) => {
+        speed: Number(r[4]) || 0,
 
-            obj[header] = row[index] || "";
+        engine: r[5] || "",
+        status: r[6] || "",
 
-        });
+        stopTime: r[7] || "",
 
-        return obj;
+        fuel: r[8] || "",
 
-    });
+        group: r[9] || "",
+
+        updateTime: r[10] || "",
+
+        gps: r[11] || "",
+
+        overspeed: r[12] || "",
+
+        address: r[13] || ""
+
+    }));
 
 }
 
