@@ -1,5 +1,5 @@
 const express = require("express");
-const { getAccessToken } = require("../services/seatalk");
+const { sendGroupMessage } = require("../services/seatalk");
 
 const router = express.Router();
 
@@ -28,7 +28,7 @@ router.post("/callback", async (req, res) => {
         }
 
         // ==================================================
-        // 2. Event khi Bot được @
+        // 2. Khi Bot được @ trong Group
         // ==================================================
         if (
             req.body.event_type ===
@@ -43,22 +43,19 @@ router.post("/callback", async (req, res) => {
             const text =
                 req.body.event.message.text.plain_text;
 
+            console.log("========================================");
             console.log("Group ID :", groupId);
             console.log("Sender   :", senderId);
             console.log("Message  :", text);
+            console.log("========================================");
 
-            // Test lấy Access Token
-            const token = await getAccessToken();
+            // Gửi tin nhắn trả lời
+            await sendGroupMessage(
+                groupId,
+                "Xin chào! Tôi đã nhận được tin nhắn của bạn."
+            );
 
-            console.log("Access Token:");
-            console.log(token);
-
-            // ================================
-            // Bước sau sẽ xử lý:
-            // - Regex lấy biển số
-            // - Tìm trong Google Sheet
-            // - Gửi tin nhắn lại SeaTalk
-            // ================================
+            console.log("Reply sent.");
 
         }
 
@@ -68,7 +65,8 @@ router.post("/callback", async (req, res) => {
 
     } catch (err) {
 
-        console.error(err);
+        console.error("Callback Error:");
+        console.error(err.response?.data || err.message);
 
         return res.status(500).json({
             success: false,
