@@ -1,152 +1,109 @@
-const express = require("express");
-const router = express.Router();
+const express = require("express"); const { sendGroupMessage } = require("../services/seatalk"); const { findVehicle } = require("../services/sheets"); const router = express.Router(); router.post("/callback", async (req, res) => { console.log("======================================"); console.log("SeaTalk Callback"); console.log(JSON.stringify(req.body, null, 2)); console.log("======================================"); try { // Verify Callback const challenge = req.body?.event?.seatalk_challenge; if (challenge) { console.log("Verify Success"); return res.json({ seatalk_challenge: challenge }); } // Khi Bot được @ trong Group if ( req.body.event_type === "new_mentioned_message_received_from_group_chat" ) { const groupId = req.body.event.group_id; const text = req.body.event.message.text.plain_text; console.log("Message :", text); // Bỏ phần @Bot const plate = text .replace("@Transportation SW", "") .trim() .toUpperCase(); console.log("Plate :", plate); const vehicle = await findVehicle(plate); if (!vehicle) { await sendGroupMessage( groupId, ❌ Không tìm thấy xe ${plate} ); return res.json({ success: true }); } const reply = 🚚 ${vehicle.plate} 👤 ${vehicle.driver} 🚦 Trạng thái : ${vehicle.status} 🔌 Động cơ : ${vehicle.engine} 🛰 GPS : ${vehicle.gps} ⏱ Dừng : ${vehicle.stopTime} ⛽ Nhiên liệu : ${vehicle.fuel}% 📍 ${vehicle.address} 🕒 Cập nhật : ${vehicle.updateTime}; await sendGroupMessage( groupId, reply ); console.log("Reply sent."); } res.json({ success: true }); } catch (err) { console.error(err); res.status(500).json({ success: false, error: err.message }); } }); module.exports = router;const express = require("express");
 
 const { sendGroupMessage } = require("../services/seatalk");
-const { findVehicle } = require("../services/vehicle");
+const { findVehicle } = require("../services/sheets");
 
+const router = express.Router();
 
 router.post("/callback", async (req, res) => {
 
+    console.log("======================================");
+    console.log("SeaTalk Callback");
+    console.log(JSON.stringify(req.body, null, 2));
+    console.log("======================================");
+
     try {
 
-        console.log("========== SEATALK CALLBACK ==========");
-        console.log(JSON.stringify(req.body, null, 2));
+        // Verify Callback
+        const challenge = req.body?.event?.seatalk_challenge;
 
+        if (challenge) {
 
-        // SeaTalk challenge verify
-        if (req.body.event?.seatalk_challenge) {
+            console.log("Verify Success");
 
             return res.json({
-                seatalk_challenge: req.body.event.seatalk_challenge
+                seatalk_challenge: challenge
             });
 
         }
 
+        // Khi Bot được @ trong Group
+        if (
+            req.body.event_type ===
+            "new_mentioned_message_received_from_group_chat"
+        ) {
 
-        const eventType = req.body.event_type;
+            const groupId = req.body.event.group_id;
 
+            const text =
+                req.body.event.message.text.plain_text;
 
-        /**
-         * User mention bot trong group
-         */
-        if (eventType === "new_mentioned_message_received_from_group_chat") {
+            console.log("Message :", text);
 
-
-            const event = req.body.event;
-
-
-            const groupId =
-                event.group.group_id;
-
-
-            const messageId =
-                event.message.message_id;
-
-
-            let text =
-                event.message.text.plain_text || "";
-
-
-            console.log("GROUP:", groupId);
-            console.log("MESSAGE ID:", messageId);
-            console.log("TEXT:", text);
-
-
-
-            // Remove bot mention
-            text = text
-                .replace(/@Transportation SW/gi, "")
-                .trim();
-
-
-
-            // Lấy biển số
-            const plate =
-                text
-                .replace(/\s+/g, "")
+            // Bỏ phần @Bot
+            const plate = text
+                .replace("@Transportation SW", "")
+                .trim()
                 .toUpperCase();
 
+            console.log("Plate :", plate);
 
+            const vehicle = await findVehicle(plate);
 
-            let reply;
+            if (!vehicle) {
 
+                await sendGroupMessage(
+                    groupId,
+                    `❌ Không tìm thấy xe ${plate}`
+                );
 
-            if (!plate) {
-
-                reply =
-`⚠️ Vui lòng nhập biển số xe
-
-Ví dụ:
-@Transportation SW 50H11201`;
-
-            }
-            else {
-
-
-                const vehicle =
-                    await findVehicle(plate);
-
-
-
-                if (vehicle) {
-
-
-                    reply =
-`🚚 THÔNG TIN XE
-
-Biển số: ${vehicle.plate}
-Tài xế: ${vehicle.driver || "-"}
-Nhóm: ${vehicle.group || "-"}
-Trạng thái: ${vehicle.status || "-"}
-Tốc độ: ${vehicle.speed || 0} km/h
-Địa chỉ:
-${vehicle.address || "-"}`;
-
-
-                }
-                else {
-
-
-                    reply =
-`❌ Không tìm thấy xe:
-
-${plate}`;
-
-                }
+                return res.json({
+                    success: true
+                });
 
             }
 
+            const reply =
+`🚚 ${vehicle.plate}
 
+👤 ${vehicle.driver}
 
-            /**
-             * Reply vào thread
-             */
+🚦 Trạng thái : ${vehicle.status}
+🔌 Động cơ : ${vehicle.engine}
+🛰 GPS : ${vehicle.gps}
+
+⏱ Dừng : ${vehicle.stopTime}
+
+⛽ Nhiên liệu : ${vehicle.fuel}%
+
+📍 ${vehicle.address}
+
+🕒 Cập nhật : ${vehicle.updateTime}`;
+
             await sendGroupMessage(
                 groupId,
-                reply,
-                messageId
+                reply
             );
 
+            console.log("Reply sent.");
 
         }
 
+        res.json({
+            success: true
+        });
 
-        res.sendStatus(200);
+    } catch (err) {
 
+        console.error(err);
 
-    }
-    catch(error){
-
-        console.error(
-            "Callback error:",
-            error
-        );
-
-        res.sendStatus(500);
+        res.status(500).json({
+            success: false,
+            error: err.message
+        });
 
     }
 
 });
-
 
 module.exports = router;
